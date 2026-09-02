@@ -29,7 +29,7 @@ export default {
       return reply(answer);
     } catch (e) {
       console.error(e);
-      return reply("AI 服务暂时不可用，请稍后再试。 DEBUG: " + (e?.stack || e?.message || String(e)));
+      return reply("AI 服务暂时不可用，请稍后再试。");
     }
   },
 };
@@ -84,12 +84,15 @@ async function callDeepSeek(env, instructions, input) {
   return resp.json();
 }
 
-// 从 Responses API 的 output 里提取 assistant 的可见文本
+// 从 Responses API 的 output 里提取 assistant 的最终回答文本。
+// 带联网搜索时，output 里会有 phase=commentary 的中间叙述，只取 final_answer。
 function extractText(data) {
   const output = data?.output || [];
   let text = "";
   for (const item of output) {
-    if (item.type === "message" && Array.isArray(item.content)) {
+    if (item.type !== "message") continue;
+    if (item.phase && item.phase !== "final_answer") continue;
+    if (Array.isArray(item.content)) {
       for (const part of item.content) {
         if (part.type === "output_text") text += part.text;
       }
