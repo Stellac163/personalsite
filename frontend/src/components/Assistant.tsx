@@ -13,8 +13,10 @@ export default function Assistant() {
   const image = assistant.image || "";
   const persona = assistant.persona || "";
 
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [bubble, setBubble] = useState(
+    `你好，我是${name}，可以问我关于作者或本站的任何问题～`
+  );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,81 +32,44 @@ export default function Assistant() {
   const send = async () => {
     const text = input.trim();
     if (!text || loading) return;
-    const history: ChatMessage[] = [...messages, { role: "user", content: text }];
-    setMessages(history);
+    const h: ChatMessage[] = [...history, { role: "user", content: text }];
+    setHistory(h);
     setInput("");
     setLoading(true);
     try {
-      const reply = await ask(text, messages, fuse, persona);
-      setMessages([...history, { role: "assistant", content: reply }]);
+      const reply = await ask(text, history, fuse, persona);
+      setBubble(reply);
+      setHistory([...h, { role: "assistant", content: reply }]);
     } catch {
-      setMessages([
-        ...history,
-        { role: "assistant", content: "出错了，请稍后再试。" },
-      ]);
+      setBubble("出错了，请稍后再试。");
     } finally {
       setLoading(false);
     }
   };
 
-  const lastAssistant = [...messages]
-    .reverse()
-    .find((m) => m.role === "assistant");
-
   return (
     <div className="assistant">
-      {open && lastAssistant && (
-        <div className="assistant__bubble">{lastAssistant.content}</div>
-      )}
-      {open && (
-        <div className="assistant__panel">
-          <div className="assistant__header">
-            <span>{name}</span>
-            <button onClick={() => setOpen(false)} aria-label="关闭">
-              ✕
-            </button>
-          </div>
-          <div className="assistant__messages">
-            {messages.length === 0 && (
-              <div className="search__empty">
-                你好，可以问我关于本站的任何问题～
-              </div>
-            )}
-            {messages.map((m, i) => (
-              <div key={i} className={`assistant__msg assistant__msg--${m.role}`}>
-                {m.content}
-              </div>
-            ))}
-            {loading && (
-              <div className="assistant__msg assistant__msg--assistant">
-                正在思考…
-              </div>
-            )}
-          </div>
-          <div className="assistant__input">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="输入问题…"
-            />
-            <button
-              className="assistant__send"
-              onClick={send}
-              disabled={loading}
-            >
-              发送
-            </button>
-          </div>
+      <div className="assistant__character">
+        <div className="assistant__bubble">
+          {loading ? "正在思考…" : bubble}
         </div>
-      )}
-      <button
-        className={`assistant__toggle${image ? " assistant__toggle--image" : ""}`}
-        onClick={() => setOpen((o) => !o)}
-        aria-label={name}
-      >
-        {image ? <img src={image} alt={name} /> : "🤖"}
-      </button>
+        {image ? (
+          <img src={image} alt={name} />
+        ) : (
+          <span className="assistant__emoji">🤖</span>
+        )}
+      </div>
+      <div className="assistant__input">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+          placeholder={`问 ${name} 问题…`}
+        />
+        <button className="assistant__send" onClick={send} disabled={loading}>
+          发送
+        </button>
+      </div>
     </div>
   );
 }
