@@ -45,8 +45,13 @@ header h1{margin:0 0 4px;font-size:1.2rem}
 </head>
 <body>
 <header>
-  <h1>网站管理工具</h1>
-  <p class="hint">本工具运行在你本地，保存后内容写入 content/ 目录，之后 git push 即可上线。</p>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px">
+    <div>
+      <h1>网站管理工具</h1>
+      <p class="hint">本工具运行在你本地，保存后点击「发布到线上」即可上线。</p>
+    </div>
+    <button class="btn" id="publishBtn" onclick="publish()">发布到线上</button>
+  </div>
 </header>
 <div class="wrap">
   <nav class="tabs" id="tabs"></nav>
@@ -256,6 +261,24 @@ async function deletePost(id) {
 async function saveConfig(what) {
   await api("/api/config", { method: "POST", body: JSON.stringify(state.config) });
   toast("已保存" + what);
+}
+
+async function publish() {
+  const btn = $("#publishBtn");
+  btn.disabled = true;
+  btn.textContent = "发布中…";
+  try {
+    const r = await api("/api/publish", { method: "POST" });
+    if (r.published) toast("✅ 已发布上线");
+    else if (r.error) { toast("发布失败"); alert("发布失败：\n\n" + r.error); }
+    else toast("没有新改动，无需发布");
+  } catch (e) {
+    toast("发布失败");
+    alert("发布失败：\n\n" + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "发布到线上";
+  }
 }
 
 load();

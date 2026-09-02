@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
+import { exec } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../.."); // personal-site/
@@ -94,6 +95,26 @@ function readBody(req) {
   });
 }
 
+function runGit(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { cwd: ROOT, timeout: 120000, windowsHide: true }, (err, stdout, stderr) => {
+      const out = ((stdout || "") + (stderr || "")).trim();
+      if (err) reject(new Error(out || String(err)));
+      else resolve(out);
+    });
+  });
+}
+
+async function publishSite() {
+  const changed = await runGit("git status --porcelain");
+  if (!changed) return { published: false, message: "没有新改动" };
+  const ts = new Date().toLocaleString("zh-CN", { hour12: false });
+  await runGit("git add -A");
+  await runGit(`git commit -m "更新内容 ${ts}"`);
+  const out = await runGit("git push");
+  return { published: true, message: out || "已发布" };
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const p = url.pathname;
@@ -120,6 +141,14 @@ const server = http.createServer(async (req, res) => {
       fs.unlinkSync(path.join(POSTS_DIR, `${id}.md`));
       return json(res, { ok: true });
     }
+    if (req.method === "POST" && p === "/api/publish") {
+      try {
+        const result = await publishSite();
+        return json(res, { ok: true, ...result });
+      } catch (err) {
+        return json(res, { ok: false, error: String((err && err.message) || err) });
+      }
+    }
     json(res, { error: "not found" }, 404);
   } catch (err) {
     json(res, { error: String(err) }, 500);
@@ -129,6 +158,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log("");
   console.log(`  本地管理工具已启动： http://localhost:${PORT}`);
-  console.log("  编辑保存后，回到项目根目录执行 git add . && git commit && git push 即可上线。");
+  console.log("  编辑保存后，点击右上角「发布到线上」即可自动提交并推送。");
   console.log("");
 });
