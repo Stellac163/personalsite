@@ -1,0 +1,28 @@
+{
+  "name": "personal-site-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/build-content.mjs && vite",
+    "content": "node scripts/build-content.mjs",
+    "build": "node scripts/build-content.mjs && vite build",
+    "admin": "node scripts/admin.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "fuse.js": "^7.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "gray-matter": "^4.0.3",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

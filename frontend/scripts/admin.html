@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>网站管理工具</title>
+<style>
+:root{--bg:#f7f8fa;--card:#fff;--border:#e6e8ee;--text:#1f2430;--muted:#6b7280;--primary:#4f46e5;--primary-soft:#eef0ff;--danger:#ef4444;--radius:12px}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 24px}
+header h1{margin:0 0 4px;font-size:1.2rem}
+.hint{color:var(--muted);font-size:0.85rem;margin:0}
+.wrap{max-width:900px;margin:24px auto;padding:0 16px}
+.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+.tab{padding:8px 18px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-size:0.9rem}
+.tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card h3{margin:0 0 16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:0.85rem;font-weight:600;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fff}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--primary)}
+.field textarea{min-height:90px;resize:vertical}
+.btn{padding:9px 18px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-weight:600;cursor:pointer;font-size:0.9rem}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.btn.danger{background:var(--danger)}
+.btn.small{padding:5px 12px;font-size:0.82rem}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .title{font-weight:600}
+.row .meta{color:var(--muted);font-size:0.82rem}
+.links-edit{display:flex;gap:8px;margin-bottom:8px}
+.links-edit input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--primary-soft);color:var(--primary);border-radius:999px;font-size:0.85rem}
+.chip button{background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;line-height:1;padding:0}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.toolbar h3{margin:0}
+.check{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:0.9rem}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 20px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;font-size:0.9rem}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>网站管理工具</h1>
+  <p class="hint">本工具运行在你本地，保存后内容写入 content/ 目录，之后 git push 即可上线。</p>
+</header>
+<div class="wrap">
+  <nav class="tabs" id="tabs"></nav>
+  <div id="view"></div>
+</div>
+<div id="toast"></div>
+<script>
+const TYPE_LABELS = { article: "文章", project: "作品", analysis: "分析" };
+let state = { config: null, posts: [] };
+let tab = "welcome";
+let editing = null; // null 或 post 对象（含 id；新建时 id 为 null）
+
+const $ = (s) => document.querySelector(s);
+const view = () => $("#view");
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+async function load() {
+  const r = await api("/api/state");
+  state = r;
+  render();
+}
+
+function switchTab(t) { tab = t; editing = null; render(); }
+
+function render() {
+  const tabs = [["welcome","欢迎页"],["profile","简介"],["tags","标签"],["assistant","助手"],["posts","内容"]];
+  $("#tabs").innerHTML = tabs.map(([k,label]) =>
+    `<button class="tab${tab===k?" active":""}" onclick="switchTab('${k}')">${label}</button>`).join("");
+  if (tab === "welcome") renderWelcome();
+  else if (tab === "profile") renderProfile();
+  else if (tab === "tags") renderTags();
+  else if (tab === "assistant") renderAssistant();
+  else renderPosts();
+}
+
+// ---------- 欢迎页 ----------
+function renderWelcome() {
+  const w = state.config.welcome;
+  view().innerHTML = `
+    <div class="card"><h3>欢迎页</h3>
+      <div class="field"><label>主标题</label><input value="${esc(w.title)}" oninput="state.config.welcome.title=this.value"></div>
+      <div class="field"><label>副标题</label><input value="${esc(w.subtitle)}" oninput="state.config.welcome.subtitle=this.value"></div>
+      <div class="field"><label>描述</label><textarea oninput="state.config.welcome.description=this.value">${esc(w.description)}</textarea></div>
+      <div class="field"><label>进入按钮文字</label><input value="${esc(w.button_text)}" oninput="state.config.welcome.button_text=this.value"></div>
+      <button class="btn" onclick="saveConfig('欢迎页')">保存</button>
+    </div>`;
+}
+
+// ---------- 简介 ----------
+function renderProfile() {
+  const p = state.config.profile;
+  const links = (p.links || []).map((l, i) => `
+    <div class="links-edit">
+      <input placeholder="名称" value="${esc(l.label)}" oninput="state.config.profile.links[${i}].label=this.value">
+      <input placeholder="URL" value="${esc(l.url)}" oninput="state.config.profile.links[${i}].url=this.value">
+      <button class="btn danger small" onclick="removeLink(${i})">删除</button>
+    </div>`).join("");
+  view().innerHTML = `
+    <div class="card"><h3>个人简介</h3>
+      <div class="field"><label>名字</label><input value="${esc(p.name)}" oninput="state.config.profile.name=this.value"></div>
+      <div class="field"><label>头像图片 URL（可留空）</label><input value="${esc(p.avatar)}" oninput="state.config.profile.avatar=this.value" placeholder="https://…"></div>
+      <div class="field"><label>简介</label><textarea oninput="state.config.profile.bio=this.value">${esc(p.bio)}</textarea></div>
+      <div class="field"><label>链接</label>${links}<button class="btn ghost small" onclick="addLink()">+ 添加链接</button></div>
+      <button class="btn" onclick="saveConfig('简介')">保存</button>
+    </div>`;
+}
+function addLink() { state.config.profile.links.push({ label: "", url: "" }); renderProfile(); }
+function removeLink(i) { state.config.profile.links.splice(i, 1); renderProfile(); }
+
+// ---------- 标签 ----------
+function renderTags() {
+  const chips = state.config.tags.map((t, i) =>
+    `<span class="chip">${esc(t)}<button onclick="removeTag(${i})">✕</button></span>`).join("");
+  view().innerHTML = `
+    <div class="card"><h3>标签</h3>
+      <p class="hint">标签显示在主页内容区上方；「全部」由系统自动提供，无需添加。</p>
+      <div class="links-edit" style="margin-bottom:14px">
+        <input id="tag_input" placeholder="新标签名" onkeydown="if(event.key==='Enter')addTag()">
+        <button class="btn" onclick="addTag()">添加</button>
+      </div>
+      <div class="chips">${chips || '<span class="hint">暂无标签</span>'}</div>
+      <div style="margin-top:16px"><button class="btn" onclick="saveConfig('标签')">保存</button></div>
+    </div>`;
+}
+function addTag() {
+  const v = $("#tag_input").value.trim();
+  if (v && !state.config.tags.includes(v)) state.config.tags.push(v);
+  renderTags();
+}
+function removeTag(i) { state.config.tags.splice(i, 1); renderTags(); }
+
+// ---------- 助手 ----------
+function renderAssistant() {
+  if (!state.config.assistant) state.config.assistant = { name: "", image: "", persona: "" };
+  const a = state.config.assistant;
+  view().innerHTML = `
+    <div class="card"><h3>AI 助手</h3>
+      <div class="field"><label>助手名字</label><input value="${esc(a.name)}" oninput="state.config.assistant.name=this.value"></div>
+      <div class="field"><label>头像图片 URL（透明底图，原样显示；留空用默认表情）</label><input value="${esc(a.image)}" oninput="state.config.assistant.image=this.value" placeholder="https://…"></div>
+      <div class="field"><label>人格设定</label><textarea style="min-height:120px" oninput="state.config.assistant.persona=this.value" placeholder="例如：你是这个网站作者的数字分身，友善幽默……">${esc(a.persona)}</textarea></div>
+      <p class="hint">人格会作为系统提示传给大模型；头像图会原样显示（不加圆框/方框/背景），建议用透明底 PNG。</p>
+      <button class="btn" onclick="saveConfig('助手')">保存</button>
+    </div>`;
+}
+
+// ---------- 内容 ----------
+function renderPosts() {
+  if (editing) { renderPostForm(); return; }
+  const rows = state.posts.map((p) => `
+    <div class="row">
+      <div>
+        <div class="title">${esc(p.title)}</div>
+        <div class="meta">${TYPE_LABELS[p.type]||p.type} · ${p.published?"已发布":"草稿"} · ${(p.tags||[]).join(", ")} · ${p.date||""}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn ghost small" onclick='editPost(${JSON.stringify(p.id)})'>编辑</button>
+        <button class="btn danger small" onclick='deletePost(${JSON.stringify(p.id)})'>删除</button>
+      </div>
+    </div>`).join("");
+  view().innerHTML = `
+    <div class="card">
+      <div class="toolbar"><h3>内容管理</h3><button class="btn" onclick="newPost()">+ 新建</button></div>
+      ${rows || '<div class="empty">还没有内容，点击「新建」开始。</div>'}
+    </div>`;
+}
+
+function newPost() {
+  const today = new Date().toISOString().slice(0, 10);
+  editing = { id: null, type: "article", title: "", summary: "", content: "", cover: "", tags: [], published: true, date: today, _tagsText: "" };
+  render();
+}
+function editPost(id) {
+  const p = state.posts.find((x) => x.id === id);
+  editing = { ...p, _tagsText: (p.tags || []).join(", ") };
+  render();
+}
+function cancelEdit() { editing = null; render(); }
+
+function renderPostForm() {
+  const p = editing;
+  view().innerHTML = `
+    <div class="card"><h3>${p.id ? "编辑内容" : "新建内容"}</h3>
+      <div class="field"><label>类型</label><select onchange="editing.type=this.value">
+        ${Object.entries(TYPE_LABELS).map(([k,v]) => `<option value="${k}" ${p.type===k?"selected":""}>${v}</option>`).join("")}
+      </select></div>
+      <div class="field"><label>标题</label><input value="${esc(p.title)}" oninput="editing.title=this.value"></div>
+      <div class="field"><label>摘要</label><input value="${esc(p.summary)}" oninput="editing.summary=this.value"></div>
+      <div class="field"><label>封面图 URL（可选）</label><input value="${esc(p.cover)}" oninput="editing.cover=this.value" placeholder="https://…"></div>
+      <div class="field"><label>标签（逗号分隔）</label><input value="${esc(p._tagsText)}" oninput="editing._tagsText=this.value" placeholder="文章, 作品, 分析"></div>
+      <div class="field"><label>日期</label><input type="date" value="${esc(p.date)}" oninput="editing.date=this.value"></div>
+      <label class="check"><input type="checkbox" ${p.published?"checked":""} onchange="editing.published=this.checked"> 发布（未勾选则仅本地可见）</label>
+      <div class="field"><label>正文（Markdown）</label><textarea style="min-height:240px" oninput="editing.content=this.value">${esc(p.content)}</textarea></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn" onclick="savePost()">保存</button>
+        <button class="btn ghost" onclick="cancelEdit()">取消</button>
+      </div>
+    </div>`;
+}
+
+async function savePost() {
+  const p = editing;
+  const payload = {
+    id: p.id || null,
+    type: p.type,
+    title: p.title,
+    summary: p.summary,
+    content: p.content,
+    cover: p.cover,
+    tags: (p._tagsText || "").split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+    published: p.published,
+    date: p.date,
+  };
+  await api("/api/posts", { method: "POST", body: JSON.stringify(payload) });
+  toast("已保存");
+  editing = null;
+  await load();
+}
+
+async function deletePost(id) {
+  if (!confirm("确认删除这篇内容？此操作不可恢复。")) return;
+  await api("/api/posts/" + encodeURIComponent(id), { method: "DELETE" });
+  toast("已删除");
+  await load();
+}
+
+// ---------- 通用保存 ----------
+async function saveConfig(what) {
+  await api("/api/config", { method: "POST", body: JSON.stringify(state.config) });
+  toast("已保存" + what);
+}
+
+load();
+</script>
+</body>
+</html>

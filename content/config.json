@@ -1,0 +1,23 @@
+{
+  "welcome": {
+    "title": "欢迎来到我的个人网站",
+    "subtitle": "代码 · 兴趣 · 思考",
+    "description": "这里展示我的代码能力、用代码实现的小创意，以及一些分析思考。",
+    "button_text": "进入"
+  },
+  "profile": {
+    "name": "你的名字",
+    "bio": "在这里写一段自我介绍，介绍你是谁、在做什么、对什么感兴趣。",
+    "avatar": "",
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/yourname" },
+      { "label": "邮箱", "url": "mailto:you@example.com" }
+    ]
+  },
+  "tags": ["文章", "作品", "分析"],
+  "assistant": {
+    "name": "小助手",
+    "image": "",
+    "persona": "你是这个网站作者的数字分身。你友善、幽默，熟悉作者的作品、文章和思考，能用轻松的方式介绍作者、推荐内容，也会认真回答访客的技术问题。"
+  }
+}

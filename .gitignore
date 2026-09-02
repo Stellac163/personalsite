@@ -1,0 +1,14 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.env
+
+# 由 build-content.mjs 生成，不需要提交
+frontend/src/data/content.json
+
+# Cloudflare Worker 本地配置
+worker/.dev.vars
+.wrangler/
