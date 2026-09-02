@@ -18,10 +18,16 @@ export interface ProfileConfig {
   links: LinkItem[];
 }
 
+export interface KeywordReply {
+  triggers: string[]; // 命中任一触发词即返回 reply（大小写不敏感、包含匹配）
+  reply: string; // 自定义回复内容
+}
+
 export interface AssistantConfig {
   name: string;
   image: string;
   persona: string;
+  keywords?: KeywordReply[]; // 关键词触发回复（命中则直接返回，不调用大模型）
 }
 
 export interface SiteSettings {

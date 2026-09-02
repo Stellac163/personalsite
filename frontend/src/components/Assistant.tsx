@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { posts, settings } from "../data";
-import type { ChatMessage, Post } from "../types";
+import type { ChatMessage, KeywordReply, Post } from "../types";
 
 // Cloudflare Worker 地址：在 frontend/.env 里设置 VITE_ASSISTANT_URL。
 // 未设置时，助手降级为「站内问答」（纯本地，不接大模型）。
@@ -37,7 +37,7 @@ export default function Assistant() {
     setInput("");
     setLoading(true);
     try {
-      const reply = await ask(text, history, fuse, persona);
+      const reply = await ask(text, history, fuse, persona, assistant.keywords);
       setBubble(reply);
       setHistory([...h, { role: "assistant", content: reply }]);
     } catch {
@@ -78,8 +78,13 @@ async function ask(
   message: string,
   history: ChatMessage[],
   fuse: Fuse<Post>,
-  persona: string
+  persona: string,
+  keywords?: KeywordReply[]
 ): Promise<string> {
+  // 关键词触发：命中则直接返回自定义回复，不调用大模型、不走站内检索。
+  const hit = matchKeyword(message, keywords);
+  if (hit) return hit;
+
   // 本地检索相关内容，作为上下文
   const related = fuse
     .search(message)
@@ -113,4 +118,19 @@ async function ask(
   if (!resp.ok) throw new Error("worker error");
   const data = (await resp.json()) as { reply: string };
   return data.reply;
+}
+
+// 关键词触发：命中任一触发词（包含匹配、大小写不敏感）即返回对应回复，否则返回 null。
+function matchKeyword(
+  message: string,
+  keywords?: KeywordReply[]
+): string | null {
+  if (!keywords || keywords.length === 0) return null;
+  const m = message.toLowerCase();
+  for (const rule of keywords) {
+    for (const t of rule.triggers || []) {
+      if (t && m.includes(String(t).toLowerCase())) return rule.reply;
+    }
+  }
+  return null;
 }

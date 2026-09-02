@@ -169,6 +169,17 @@ function removeTag(i) { state.config.tags.splice(i, 1); renderTags(); }
 function renderAssistant() {
   if (!state.config.assistant) state.config.assistant = { name: "", image: "", persona: "" };
   const a = state.config.assistant;
+  if (!a.keywords) a.keywords = [];
+  const kw = a.keywords.map((k, i) => `
+    <div class="card" style="background:#fafafa">
+      <div class="field"><label>触发词（逗号分隔，命中任意一个即触发，包含匹配、大小写不敏感）</label>
+        <input value="${esc((k.triggers || []).join(", "))}" oninput="state.config.assistant.keywords[${i}].triggers = this.value.split(/[,，]/).map(s=>s.trim()).filter(Boolean)">
+      </div>
+      <div class="field"><label>回复内容（命中后直接返回，不调用大模型）</label>
+        <textarea oninput="state.config.assistant.keywords[${i}].reply=this.value">${esc(k.reply || "")}</textarea>
+      </div>
+      <button class="btn danger small" onclick="removeKeyword(${i})">删除这条</button>
+    </div>`).join("");
   view().innerHTML = `
     <div class="card"><h3>AI 助手</h3>
       <div class="field"><label>助手名字</label><input value="${esc(a.name)}" oninput="state.config.assistant.name=this.value"></div>
@@ -176,8 +187,20 @@ function renderAssistant() {
       <div class="field"><label>人格设定</label><textarea style="min-height:120px" oninput="state.config.assistant.persona=this.value" placeholder="例如：你是这个网站作者的数字分身，友善幽默……">${esc(a.persona)}</textarea></div>
       <p class="hint">人格会作为系统提示传给大模型；头像图会原样显示（不加圆框/方框/背景），建议用透明底 PNG。</p>
       <button class="btn" onclick="saveConfig('助手')">保存</button>
+    </div>
+    <div class="card"><h3>关键词触发回复（可选）</h3>
+      <p class="hint">访客输入命中「触发词」时，直接返回下面设定的内容，不调用大模型、也不走站内检索。适合「网站作者」「你是谁」这类固定问答。</p>
+      ${kw || '<div class="empty">还没有关键词回复，点下方按钮添加。</div>'}
+      <div style="margin-top:12px"><button class="btn ghost" onclick="addKeyword()">+ 添加关键词回复</button></div>
+      <div style="margin-top:12px"><button class="btn" onclick="saveConfig('助手关键词')">保存</button></div>
     </div>`;
 }
+function addKeyword() {
+  if (!state.config.assistant.keywords) state.config.assistant.keywords = [];
+  state.config.assistant.keywords.push({ triggers: [], reply: "" });
+  renderAssistant();
+}
+function removeKeyword(i) { state.config.assistant.keywords.splice(i, 1); renderAssistant(); }
 
 // ---------- 内容 ----------
 function renderPosts() {
