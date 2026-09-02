@@ -6,18 +6,17 @@ import PostDetail from "./pages/PostDetail";
 
 export default function App() {
   const location = useLocation();
-  // 主页垫在欢迎页下面；在「/」时欢迎页覆盖其上，进入时上滑露出主页。
-  const showWelcome = location.pathname === "/";
+  // 欢迎页作为覆盖层始终挂载：位于「/」时显示，进入主页后滑到屏幕外，返回时再滑回。
+  const welcomeHidden = location.pathname !== "/";
 
   return (
     <>
       <Background />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/home" element={<Home />} />
         <Route path="/post/:id" element={<PostDetail />} />
+        <Route path="*" element={<Home />} />
       </Routes>
-      {showWelcome && <Welcome />}
+      <Welcome hidden={welcomeHidden} />
     </>
   );
 }
