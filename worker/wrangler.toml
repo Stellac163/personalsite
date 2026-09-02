@@ -4,7 +4,6 @@ compatibility_date = "2025-01-01"
 
 # 密钥不要写在这里，用命令设置 secret：
 #   npx wrangler secret put DEEPSEEK_API_KEY   # 必填
-#   npx wrangler secret put TAVILY_API_KEY      # 可选，配置后可联网搜索
 [vars]
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-DEEPSEEK_MODEL = "deepseek-chat"
+DEEPSEEK_MODEL = "deepseek-v4-flash"

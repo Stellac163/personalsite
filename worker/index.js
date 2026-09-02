@@ -1,23 +1,6 @@
-// Cloudflare Worker：代理 DeepSeek 调用，支持人格设定与联网搜索。
+// Cloudflare Worker：代理 DeepSeek 调用（Responses API），支持人格设定与原生联网搜索。
 // - DEEPSEEK_API_KEY：必填，存在 Worker secret 中。
-// - TAVILY_API_KEY：可选，配置后助手可联网搜索（function calling）。
-const SEARCH_TOOLS = [
-  {
-    type: "function",
-    function: {
-      name: "search_web",
-      description:
-        "当站内资料不足以回答用户问题，或需要获取实时/最新信息时，搜索互联网。",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "搜索关键词" },
-        },
-        required: ["query"],
-      },
-    },
-  },
-];
+// - 联网搜索由 DeepSeek 服务端内置 web_search 工具完成，无需第三方搜索服务。
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +29,7 @@ export default {
       return reply(answer);
     } catch (e) {
       console.error(e);
-      return reply("AI 服务暂时不可用，请稍后再试。");
+      return reply("AI 服务暂时不可用，请稍后再试。 DEBUG: " + (e?.stack || e?.message || String(e)));
     }
   },
 };
@@ -63,7 +46,7 @@ function buildSystem(persona) {
     "你的职责：\n" +
     "1. 帮助访客了解网站作者、找到感兴趣的文章和作品。\n" +
     "2. 基于「站内资料」回答关于本网站内容的问题，引用时说明是哪篇内容。\n" +
-    "3. 如果站内资料不足以回答，可联网搜索补充（若可用），并说明信息来源。\n" +
+    "3. 如果站内资料不足以回答，或需要实时/最新信息，可联网搜索补充，并说明信息来源。\n" +
     "4. 你可以和访客闲聊、聊作者、聊技术，回答要自然友好。\n";
   const style = "请用自然、友好的中文回答，简洁清楚，避免冗长。";
   if (persona) {
@@ -72,17 +55,21 @@ function buildSystem(persona) {
   return `${base}\n${duties}\n${style}`;
 }
 
-async function callDeepSeek(env, messages, tools) {
+async function callDeepSeek(env, instructions, input) {
   const base = (env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/$/, "");
   const payload = {
-    model: env.DEEPSEEK_MODEL || "deepseek-chat",
-    messages,
+    model: env.DEEPSEEK_MODEL || "deepseek-v4-flash",
+    instructions,
+    input,
+    // 内置联网搜索工具，模型按需调用（tool_choice 默认 auto）
+    tools: [{ type: "web_search" }],
+    // 关闭思考模式，聊天响应更快（无需 chain-of-thought）
+    reasoning: { effort: "none" },
+    max_output_tokens: 800,
     temperature: 0.7,
-    max_tokens: 800,
   };
-  if (tools) payload.tools = tools;
 
-  const resp = await fetch(`${base}/chat/completions`, {
+  const resp = await fetch(`${base}/responses`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
@@ -90,73 +77,41 @@ async function callDeepSeek(env, messages, tools) {
     },
     body: JSON.stringify(payload),
   });
-  if (!resp.ok) throw new Error(`deepseek ${resp.status}`);
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => "");
+    throw new Error(`deepseek ${resp.status}: ${errText.slice(0, 200)}`);
+  }
   return resp.json();
 }
 
-async function searchWeb(env, query) {
-  const resp = await fetch("https://api.tavily.com/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      api_key: env.TAVILY_API_KEY,
-      query,
-      max_results: 5,
-      search_depth: "basic",
-    }),
-  });
-  if (!resp.ok) throw new Error(`tavily ${resp.status}`);
-  const data = await resp.json();
-  const results = (data.results || []).slice(0, 5);
-  if (results.length === 0) return "（未找到相关搜索结果）";
-  return results
-    .map((r, i) => `${i + 1}. ${r.title}\n${r.content || r.snippet || ""}`)
-    .join("\n\n");
+// 从 Responses API 的 output 里提取 assistant 的可见文本
+function extractText(data) {
+  const output = data?.output || [];
+  let text = "";
+  for (const item of output) {
+    if (item.type === "message" && Array.isArray(item.content)) {
+      for (const part of item.content) {
+        if (part.type === "output_text") text += part.text;
+      }
+    }
+  }
+  return text.trim();
 }
 
 async function chat(body, env) {
   const { message = "", history = [], context = "", persona = "" } = body;
 
-  const messages = [{ role: "system", content: buildSystem(persona) }];
+  const input = [];
   for (const m of history.slice(-10)) {
-    if (m.role === "user" || m.role === "assistant") messages.push(m);
+    if (m.role === "user" || m.role === "assistant") {
+      input.push({ role: m.role, content: m.content });
+    }
   }
   const userContent = context
-    ? `以下是站内资料（可能相关）：\n\n${context}\n\n访客的问题：${message}\n\n请结合站内资料回答。`
+    ? `以下是站内资料（可能相关）：\n\n${context}\n\n访客的问题：${message}\n\n请结合站内资料回答；若站内资料不足以回答或需要实时信息，请联网搜索。`
     : message;
-  messages.push({ role: "user", content: userContent });
+  input.push({ role: "user", content: userContent });
 
-  const canSearch = !!env.TAVILY_API_KEY;
-
-  const data1 = await callDeepSeek(env, messages, canSearch ? SEARCH_TOOLS : undefined);
-  const msg1 = data1.choices?.[0]?.message || {};
-
-  // 模型请求联网搜索，且已配置搜索 key
-  const toolCalls = msg1.tool_calls || [];
-  if (canSearch && toolCalls.length > 0) {
-    const call = toolCalls[0];
-    let query = message;
-    try {
-      query = JSON.parse(call.function?.arguments || "{}").query || message;
-    } catch {
-      /* ignore */
-    }
-    const results = await searchWeb(env, query);
-
-    messages.push({
-      role: "assistant",
-      content: msg1.content || "",
-      tool_calls: toolCalls,
-    });
-    messages.push({
-      role: "tool",
-      tool_call_id: call.id,
-      content: `互联网搜索结果：\n${results}`,
-    });
-
-    const data2 = await callDeepSeek(env, messages, undefined);
-    return (data2.choices?.[0]?.message?.content || "").trim();
-  }
-
-  return (msg1.content || "").trim();
+  const data = await callDeepSeek(env, buildSystem(persona), input);
+  return extractText(data);
 }
