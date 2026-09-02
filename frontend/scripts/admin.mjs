@@ -23,6 +23,7 @@ function readConfig() {
 
 function readPosts() {
   const posts = [];
+  if (!fs.existsSync(POSTS_DIR)) return posts;
   for (const file of fs.readdirSync(POSTS_DIR)) {
     if (!file.endsWith(".md")) continue;
     const raw = fs.readFileSync(path.join(POSTS_DIR, file), "utf8");
@@ -66,6 +67,7 @@ function writePost(post) {
     date: post.date || new Date().toISOString().slice(0, 10),
   };
   const md = matter.stringify(content, data).trimEnd() + "\n";
+  fs.mkdirSync(POSTS_DIR, { recursive: true });
   fs.writeFileSync(path.join(POSTS_DIR, `${id}.md`), md, "utf8");
   return id;
 }

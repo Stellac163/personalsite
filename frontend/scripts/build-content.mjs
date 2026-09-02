@@ -16,21 +16,23 @@ const config = JSON.parse(
 );
 
 const posts = [];
-for (const file of fs.readdirSync(postsDir)) {
-  if (!file.endsWith(".md")) continue;
-  const raw = fs.readFileSync(path.join(postsDir, file), "utf8");
-  const { data, content } = matter(raw);
-  posts.push({
-    id: file.replace(/\.md$/, ""),
-    type: data.type || "article",
-    title: data.title || "未命名",
-    summary: data.summary || "",
-    content: content.trim(),
-    cover: data.cover || "",
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    published: data.published !== false,
-    date: data.date || "",
-  });
+if (fs.existsSync(postsDir)) {
+  for (const file of fs.readdirSync(postsDir)) {
+    if (!file.endsWith(".md")) continue;
+    const raw = fs.readFileSync(path.join(postsDir, file), "utf8");
+    const { data, content } = matter(raw);
+    posts.push({
+      id: file.replace(/\.md$/, ""),
+      type: data.type || "article",
+      title: data.title || "未命名",
+      summary: data.summary || "",
+      content: content.trim(),
+      cover: data.cover || "",
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      published: data.published !== false,
+      date: data.date || "",
+    });
+  }
 }
 
 posts.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
