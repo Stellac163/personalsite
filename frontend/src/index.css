@@ -631,10 +631,8 @@ select {
 
 /* 头顶气泡 */
 .assistant__bubble {
-  position: absolute;
-  bottom: calc(100% + 16px);
-  left: 0;
-  right: 0;
+  position: relative;
+  margin-bottom: 14px;
   background: rgba(24, 27, 38, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -651,10 +649,11 @@ select {
 .assistant__bubble::after {
   content: "";
   position: absolute;
-  right: 40px;
+  left: 50%;
   bottom: -7px;
   width: 12px;
   height: 12px;
+  margin-left: -6px;
   background: rgba(24, 27, 38, 0.92);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
