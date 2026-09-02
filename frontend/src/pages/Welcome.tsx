@@ -12,10 +12,6 @@ export default function Welcome() {
         <h1>{welcome.title}</h1>
         <p className="subtitle">{welcome.subtitle}</p>
         <Typewriter text={welcome.description} />
-        <div className="welcome__extras">
-          <Clock />
-          <Hitokoto />
-        </div>
         <button className="welcome__enter" onClick={() => navigate("/home")}>
           {welcome.button_text}
         </button>
@@ -45,37 +41,4 @@ function Typewriter({ text }: { text: string }) {
       <span className="typewriter__cursor">|</span>
     </p>
   );
-}
-
-function Clock() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const text = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  return <div className="welcome__clock">{text}</div>;
-}
-
-function Hitokoto() {
-  const [text, setText] = useState("");
-
-  useEffect(() => {
-    let alive = true;
-    fetch("https://v1.hitokoto.cn")
-      .then((r) => r.json())
-      .then((d) => {
-        if (alive) setText(d.hitokoto + (d.from ? ` —— ${d.from}` : ""));
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  if (!text) return null;
-  return <div className="welcome__hitokoto">{text}</div>;
 }

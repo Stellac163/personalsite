@@ -8,6 +8,7 @@ export interface WelcomeConfig {
 export interface LinkItem {
   label: string;
   url: string;
+  icon?: string; // 链接名前的图标：emoji 或图片 URL
 }
 
 export interface ProfileConfig {
@@ -24,6 +25,7 @@ export interface AssistantConfig {
 }
 
 export interface SiteSettings {
+  background: string; // 全站背景图（必应 API 或图片链接）
   welcome: WelcomeConfig;
   profile: ProfileConfig;
   tags: string[];

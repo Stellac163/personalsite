@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import TagNav from "../components/TagNav";
 import SearchBar from "../components/SearchBar";
 import Assistant from "../components/Assistant";
+import SideWidget from "../components/SideWidget";
 import PostCard from "../components/PostCard";
 
 export default function Home() {
@@ -30,7 +31,10 @@ export default function Home() {
           )}
         </div>
       </div>
-      <Assistant />
+      <div className="corner">
+        <SideWidget />
+        <Assistant />
+      </div>
     </div>
   );
 }

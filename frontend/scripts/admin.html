@@ -112,6 +112,7 @@ function renderWelcome() {
   const w = state.config.welcome;
   view().innerHTML = `
     <div class="card"><h3>欢迎页</h3>
+      <div class="field"><label>背景图片链接（必应每日一图 API 或图片 URL，留空则用深色渐变）</label><input value="${esc(state.config.background || '')}" oninput="state.config.background=this.value" placeholder="https://api.dujin.org/bing/1920.php"></div>
       <div class="field"><label>主标题</label><input value="${esc(w.title)}" oninput="state.config.welcome.title=this.value"></div>
       <div class="field"><label>副标题</label><input value="${esc(w.subtitle)}" oninput="state.config.welcome.subtitle=this.value"></div>
       <div class="field"><label>描述</label><textarea oninput="state.config.welcome.description=this.value">${esc(w.description)}</textarea></div>
@@ -125,6 +126,7 @@ function renderProfile() {
   const p = state.config.profile;
   const links = (p.links || []).map((l, i) => `
     <div class="links-edit">
+      <input placeholder="图标（emoji 或图片URL）" value="${esc(l.icon || '')}" oninput="state.config.profile.links[${i}].icon=this.value" style="max-width:150px">
       <input placeholder="名称" value="${esc(l.label)}" oninput="state.config.profile.links[${i}].label=this.value">
       <input placeholder="URL" value="${esc(l.url)}" oninput="state.config.profile.links[${i}].url=this.value">
       <button class="btn danger small" onclick="removeLink(${i})">删除</button>
@@ -138,7 +140,7 @@ function renderProfile() {
       <button class="btn" onclick="saveConfig('简介')">保存</button>
     </div>`;
 }
-function addLink() { state.config.profile.links.push({ label: "", url: "" }); renderProfile(); }
+function addLink() { state.config.profile.links.push({ label: "", url: "", icon: "" }); renderProfile(); }
 function removeLink(i) { state.config.profile.links.splice(i, 1); renderProfile(); }
 
 // ---------- 标签 ----------

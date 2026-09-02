@@ -22,7 +22,18 @@ export default function Sidebar({ profile }: { profile: ProfileConfig }) {
             target="_blank"
             rel="noreferrer"
           >
-            ↗ {l.label}
+            <span className="sidebar__link-icon">
+              {l.icon ? (
+                l.icon.startsWith("http") ? (
+                  <img src={l.icon} alt="" />
+                ) : (
+                  l.icon
+                )
+              ) : (
+                "↗"
+              )}
+            </span>
+            {l.label}
           </a>
         ))}
       </div>

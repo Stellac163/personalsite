@@ -1,4 +1,5 @@
 {
+  "background": "https://api.dujin.org/bing/1920.php",
   "welcome": {
     "title": "欢迎来到我的个人网站",
     "subtitle": "代码 · 兴趣 · 思考",
@@ -12,11 +13,13 @@
     "links": [
       {
         "label": "GitHub",
-        "url": "https://github.com/yourname"
+        "url": "https://github.com/yourname",
+        "icon": "🐙"
       },
       {
         "label": "邮箱",
-        "url": "mailto:you@example.com"
+        "url": "mailto:you@example.com",
+        "icon": "✉️"
       }
     ]
   },
