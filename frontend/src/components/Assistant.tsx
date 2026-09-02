@@ -51,7 +51,9 @@ export default function Assistant() {
     <div className="assistant">
       <div className="assistant__character">
         <div className="assistant__bubble">
-          {loading ? "正在思考…" : bubble}
+          <div className="assistant__bubble-scroll">
+            {loading ? "正在思考…" : bubble}
+          </div>
         </div>
         {image ? (
           <img src={image} alt={name} />
