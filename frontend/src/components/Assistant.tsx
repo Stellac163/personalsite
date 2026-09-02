@@ -7,7 +7,7 @@ import type { ChatMessage, KeywordReply, Post } from "../types";
 // 未设置时，助手降级为「站内问答」（纯本地，不接大模型）。
 const WORKER_URL = import.meta.env.VITE_ASSISTANT_URL as string | undefined;
 
-export default function Assistant() {
+export default function Assistant({ onCollapse }: { onCollapse?: () => void }) {
   const assistant = settings.assistant || { name: "AI 助手", image: "", persona: "" };
   const name = assistant.name || "AI 助手";
   const image = assistant.image || "";
@@ -56,9 +56,9 @@ export default function Assistant() {
           </div>
         </div>
         {image ? (
-          <img src={image} alt={name} />
+          <img src={image} alt={name} onClick={onCollapse} title="点击收起" />
         ) : (
-          <span className="assistant__emoji">🤖</span>
+          <span className="assistant__emoji" onClick={onCollapse} title="点击收起">🤖</span>
         )}
       </div>
       <div className="assistant__input">
