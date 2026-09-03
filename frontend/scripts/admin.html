@@ -60,7 +60,6 @@ header h1{margin:0 0 4px;font-size:1.2rem}
 <div id="toast"></div>
 <script>
 const TYPE_LABELS = { article: "文章", project: "作品", analysis: "分析" };
-const TAG_TO_TYPE = Object.fromEntries(Object.entries(TYPE_LABELS).map(([k, v]) => [v, k]));
 let state = { config: null, posts: [] };
 let tab = "welcome";
 let editing = null; // null 或 post 对象（含 id；新建时 id 为 null）
@@ -236,42 +235,17 @@ function editPost(id) {
 }
 function cancelEdit() { editing = null; render(); }
 
-// 类型与标签联动：文章↔article、作品↔project、分析↔analysis
-function splitTags(text) {
-  return (text || "").split(/[,，]/).map((s) => s.trim()).filter(Boolean);
-}
-
-function onTypeChange(type) {
-  editing.type = type;
-  // 同步标签框：用对应的标准标签替换掉其它标准标签
-  const canonical = TYPE_LABELS[type];
-  if (!canonical) return;
-  const rest = splitTags(editing._tagsText).filter((t) => !TAG_TO_TYPE[t]);
-  editing._tagsText = [...rest, canonical].join(", ");
-  const input = document.getElementById("tags_input");
-  if (input) input.value = editing._tagsText;
-}
-
-function onTagsInput(text) {
-  editing._tagsText = text;
-  // 标签里出现标准类型标签时，联动更新类型下拉框；否则回退到「文章」
-  const matched = splitTags(text).map((t) => TAG_TO_TYPE[t]).find(Boolean);
-  editing.type = matched || "article";
-  const sel = document.getElementById("type_select");
-  if (sel) sel.value = editing.type;
-}
-
 function renderPostForm() {
   const p = editing;
   view().innerHTML = `
     <div class="card"><h3>${p.id ? "编辑内容" : "新建内容"}</h3>
-      <div class="field"><label>类型</label><select id="type_select" onchange="onTypeChange(this.value)">
+      <div class="field"><label>类型</label><select id="type_select" onchange="editing.type=this.value">
         ${Object.entries(TYPE_LABELS).map(([k,v]) => `<option value="${k}" ${p.type===k?"selected":""}>${v}</option>`).join("")}
       </select></div>
       <div class="field"><label>标题</label><input value="${esc(p.title)}" oninput="editing.title=this.value"></div>
       <div class="field"><label>摘要</label><input value="${esc(p.summary)}" oninput="editing.summary=this.value"></div>
       <div class="field"><label>封面图 URL（可选）</label><input value="${esc(p.cover)}" oninput="editing.cover=this.value" placeholder="https://…"></div>
-      <div class="field"><label>标签（逗号分隔）</label><input id="tags_input" value="${esc(p._tagsText)}" oninput="onTagsInput(this.value)" placeholder="文章, 作品, 分析"></div>
+      <div class="field"><label>标签（逗号分隔，用于主页筛选）</label><input id="tags_input" value="${esc(p._tagsText)}" oninput="editing._tagsText=this.value" placeholder="例如：Coding, 跑团"></div>
       <div class="field"><label>日期</label><input type="date" value="${esc(p.date)}" oninput="editing.date=this.value"></div>
       <label class="check"><input type="checkbox" ${p.published?"checked":""} onchange="editing.published=this.checked"> 发布（未勾选则仅本地可见）</label>
       <div class="field"><label>正文（Markdown）</label><textarea style="min-height:240px" oninput="editing.content=this.value">${esc(p.content)}</textarea></div>
