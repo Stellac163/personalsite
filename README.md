@@ -110,7 +110,8 @@ wrangler secret put TAVILY_API_KEY      # 可选：粘贴 Tavily Key，开启联
   "welcome": { "title": "…", "subtitle": "…", "description": "…", "button_text": "进入" },
   "profile": { "name": "…", "bio": "…", "avatar": "", "links": [{ "label": "GitHub", "url": "…" }] },
   "tags": ["文章", "作品", "分析"],
-  "assistant": { "name": "小助手", "image": "", "persona": "助手的人格设定……" }
+  "assistant": { "name": "小助手", "image": "", "persona": "助手的人格设定……" },
+  "postOrder": ["文章id1", "文章id2"]
 }
 ```
 
@@ -130,3 +131,5 @@ date: 2026-09-02
 
 正文（Markdown）……
 ```
+
+> **显示顺序**：默认按 `date` 倒序展示。你可以在管理工具的「内容」页用 ↑ ↓ 按钮自由调整顺序（对应 `config.json` 里的 `postOrder`，是文章 id 的列表，越靠前显示越靠前；未列出的文章仍按日期倒序排在后面）。

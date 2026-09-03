@@ -21,7 +21,7 @@ function readConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
 }
 
-function readPosts() {
+function readPosts(postOrder) {
   const posts = [];
   if (!fs.existsSync(POSTS_DIR)) return posts;
   for (const file of fs.readdirSync(POSTS_DIR)) {
@@ -40,7 +40,17 @@ function readPosts() {
       date: data.date || "",
     });
   }
-  posts.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  // 手动排序：postOrder 里出现的 id 按数组顺序排在最前；
+  // 未列出的文章按日期倒序排在后面。
+  const orderMap = new Map(
+    (Array.isArray(postOrder) ? postOrder : []).map((id, i) => [id, i])
+  );
+  posts.sort((a, b) => {
+    const oa = orderMap.has(a.id) ? orderMap.get(a.id) : Infinity;
+    const ob = orderMap.has(b.id) ? orderMap.get(b.id) : Infinity;
+    if (oa !== ob) return oa - ob;
+    return String(b.date || "").localeCompare(String(a.date || ""));
+  });
   return posts;
 }
 
@@ -126,7 +136,8 @@ const server = http.createServer(async (req, res) => {
       return sendHtml(res, ADMIN_HTML);
     }
     if (req.method === "GET" && p === "/api/state") {
-      return json(res, { config: readConfig(), posts: readPosts() });
+      const config = readConfig();
+      return json(res, { config, posts: readPosts(config.postOrder) });
     }
     if (req.method === "POST" && p === "/api/config") {
       const config = await readBody(req);

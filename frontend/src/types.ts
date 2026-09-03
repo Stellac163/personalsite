@@ -36,6 +36,7 @@ export interface SiteSettings {
   profile: ProfileConfig;
   tags: string[];
   assistant: AssistantConfig;
+  postOrder?: string[]; // 文章显示顺序（id 列表，越靠前显示越靠前）
 }
 
 export interface Post {

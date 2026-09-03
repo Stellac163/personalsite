@@ -35,7 +35,17 @@ if (fs.existsSync(postsDir)) {
   }
 }
 
-posts.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+// 手动排序：config.postOrder 里出现的 id 按数组顺序排在最前；
+// 未列出的文章按日期倒序排在后面。
+const orderMap = new Map(
+  (Array.isArray(config.postOrder) ? config.postOrder : []).map((id, i) => [id, i])
+);
+posts.sort((a, b) => {
+  const oa = orderMap.has(a.id) ? orderMap.get(a.id) : Infinity;
+  const ob = orderMap.has(b.id) ? orderMap.get(b.id) : Infinity;
+  if (oa !== ob) return oa - ob;
+  return String(b.date || "").localeCompare(String(a.date || ""));
+});
 
 const published = posts.filter((p) => p.published);
 const out = { config, posts: published };
