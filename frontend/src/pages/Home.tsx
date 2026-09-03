@@ -15,7 +15,9 @@ export default function Home() {
   const filtered =
     activeTag === "全部"
       ? posts
-      : posts.filter((p) => p.type !== "article" && p.tags.includes(activeTag));
+      : posts.filter((p) =>
+          p.tags.some((t) => t.toLowerCase() === activeTag.toLowerCase())
+        );
 
   return (
     <div className="home">
