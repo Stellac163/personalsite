@@ -10,7 +10,7 @@ published: true
 date: '2026-09-03'
 ---
 在阅读了**Lelia**老师的**SealDiceAIroleplay**后大受启发，给私骰装上后，却觉得我key都花钱了不如加点新功能，于是修改版本应运而生。
->  Lelia老师的原文链接：[](https://github.com/Lelia7OR/SealDiceAIroleplay)
+>  Lelia老师的原文链接：https://github.com/Lelia7OR/SealDiceAIroleplay
 
 在python后端中需要增加一些段落。
 如：因为原版本中的chat接口并不使用于搜索功能，在设定完api key后需在代码中加入：
