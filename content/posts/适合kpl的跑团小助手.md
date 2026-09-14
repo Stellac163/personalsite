@@ -2,8 +2,7 @@
 type: project
 title: 适合KPL的跑团小助手
 summary: 集模组、角色卡、骰子、小工具为一体的coc规则跑团小助手
-cover: >-
-  https://img2.tofaka.com/autoupload/f/kel8m/20260915/hyi6/2551X1193/cochelper2.png/webp
+cover: ''
 tags:
   - coding
   - 跑团
@@ -11,7 +10,7 @@ published: true
 date: '2026-09-14'
 ---
 为方便面团而生的**跑团小工具集**！
-总共有四大模块：<u>模组、角色、骰子、工具</u>
+总共有四大模块：*模组、角色、骰子、工具*
 
 - 模组
 
