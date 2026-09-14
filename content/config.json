@@ -7,7 +7,7 @@
     "button_text": "进入"
   },
   "profile": {
-    "name": "Stellla",
+    "name": "Stella",
     "bio": "一个major为数据分析的赛博吟游诗人、跑团kp、同人说书人、互联网垃圾建造大师。",
     "avatar": "https://img2.tofaka.com/autoupload/f/kel8m/20260903/2YsL/640X640/b_88b6fb957d568d8aa230e23e637c91ad.jpg",
     "links": [
@@ -61,6 +61,7 @@
   },
   "postOrder": [
     "时间管理助手-life-manager",
+    "适合kpl的跑团小助手",
     "海豹骰跑团线索整理板插件",
     "给lelia老师的airolepay海豹骰插件加上搜索功能"
   ]
