@@ -11,6 +11,7 @@ date: '2026-09-14'
 ---
 为方便面团而生的**跑团小工具集**！
 总共有四大模块：*模组、角色、骰子、工具*
+该网页已经上线了，网址如下：https://stellac163.github.io/coc-helper/
 
 - 模组
 
@@ -46,5 +47,4 @@ date: '2026-09-14'
 
   ![](https://img2.tofaka.com/autoupload/f/kel8m/20260915/P3AM/1471X1186/%E5%9B%BE%E7%89%877.png/webp)
 
-现在，该网页已经上线，网址如下：https://stellac163.github.io/coc-helper/
 敬请使用，如果能够帮到各位kp、pl，那就太好了~
