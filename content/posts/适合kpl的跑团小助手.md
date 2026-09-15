@@ -1,7 +1,7 @@
 ---
 type: project
-title: 适合KPL的跑团小助手
-summary: 集模组、角色卡、骰子、小工具为一体的coc规则跑团小助手
+title: 适合KPL的跑团工具包
+summary: 集模组、角色卡、骰子、小工具为一体的coc规则跑团助手
 cover: ''
 tags:
   - coding
